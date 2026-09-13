@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>热点经济新闻速览</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --accent: #c8102e;
+    --accent-soft: #fdeef0;
+    --border: #e5e7eb;
+    --tag-bg: #eef2f7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #8f0d22 0%, #c8102e 100%);
+    color: #fff;
+    padding: 36px 20px 28px;
+    text-align: center;
+  }
+  header h1 { font-size: 26px; letter-spacing: 2px; font-weight: 700; }
+  header p { margin-top: 8px; font-size: 13px; opacity: .85; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    align-items: center; margin-bottom: 20px;
+  }
+  .toolbar .tag-btn {
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .toolbar .tag-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .toolbar .tag-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .updated { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+  .news-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    transition: box-shadow .15s;
+  }
+  .news-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+  .news-card.hot { border-left: 4px solid var(--accent); }
+  .news-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .badge-hot {
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .badge-tag {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    padding: 1px 10px;
+    border-radius: 4px;
+  }
+  .news-date { font-size: 12px; color: var(--muted); }
+  .news-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .news-title a { color: var(--text); text-decoration: none; }
+  .news-title a:hover { color: var(--accent); }
+  .news-summary { font-size: 14px; color: #374151; }
+  .news-source { margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+  .empty {
+    text-align: center; color: var(--muted);
+    padding: 60px 0; font-size: 14px;
+  }
+  footer {
+    text-align: center; padding: 24px; font-size: 12px;
+    color: var(--muted); border-top: 1px solid var(--border);
+  }
+  @media (max-width: 600px) {
+    header h1 { font-size: 20px; }
+    .news-title { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>热点经济新闻速览</h1>
+  <p>聚焦宏观经济 · 货币政策 · 贸易 · 大宗商品 · 金融市场动态</p>
+</header>
+
+<div class="wrap">
+  <div class="toolbar" id="toolbar">
+    <span class="updated" id="updated"></span>
+  </div>
+  <div id="news-list"></div>
+</div>
+
+<footer>
+  内容不定期更新 · 数据与摘要严格忠于来源 · 仅供参考，不构成投资建议
+</footer>
+
+<script src="news-data.js"></script>
+<script>
+  (function () {
+    const list = document.getElementById("news-list");
+    const toolbar = document.getElementById("toolbar");
+    let activeTag = "全部";
+
+    // 计算最近更新日期
+    const dates = NEWS_ITEMS.map(n => n.date).sort().reverse();
+    if (dates.length) {
+      document.getElementById("updated").textContent = "最近更新：" + dates[0];
+    }
+
+    // 生成分类按钮
+    const tags = ["全部", ...new Set(NEWS_ITEMS.map(n => n.tag))];
+    tags.forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = "tag-btn" + (t === activeTag ? " active" : "");
+      btn.textContent = t;
+      btn.onclick = () => {
+        activeTag = t;
+        toolbar.querySelectorAll(".tag-btn").forEach(b => b.classList.toggle("active", b.textContent === t));
+        render();
+      };
+      toolbar.insertBefore(btn, document.getElementById("updated"));
+    });
+
+    function render() {
+      let items = NEWS_ITEMS.filter(n => activeTag === "全部" || n.tag === activeTag);
+      // 热点排前，其余按日期倒序
+      items.sort((a, b) => {
+        if (!!b.hot !== !!a.hot) return (b.hot ? 1 : 0) - (a.hot ? 1 : 0);
+        return (b.date || "").localeCompare(a.date || "");
+      });
+
+      list.innerHTML = "";
+      if (!items.length) {
+        list.innerHTML = '<div class="empty">暂无该分类下的新闻</div>';
+        return;
+      }
+
+      items.forEach(n => {
+        const card = document.createElement("div");
+        card.className = "news-card" + (n.hot ? " hot" : "");
+        const titleHtml = n.url
+          ? '<a href="' + n.url + '" target="_blank" rel="noopener">' + escapeHtml(n.title) + '</a>'
+          : escapeHtml(n.title);
+        card.innerHTML =
+          '<div class="news-meta">' +
+            (n.hot ? '<span class="badge-hot">热点</span>' : '') +
+            '<span class="badge-tag">' + escapeHtml(n.tag || "资讯") + '</span>' +
+            '<span class="news-date">' + escapeHtml(n.date || "") + '</span>' +
+          '</div>' +
+          '<div class="news-title">' + titleHtml + '</div>' +
+          '<div class="news-summary">' + escapeHtml(n.summary || "") + '</div>' +
+          (n.source ? '<div class="news-source">来源：' + escapeHtml(n.source) + '</div>' : '');
+        list.appendChild(card);
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    render();
+  })();
+</script>
+</body>
+</html>

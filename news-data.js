@@ -13,6 +13,15 @@
 
 const NEWS_ITEMS = [
   {
+    date: "2026-09-11",
+    tag: "宏观",
+    title: "CPI 超预期！美股和黄金为何利空不跌？",
+    summary: "本次 CPI 核心 CPI 月增 0.3% 高于预期，推升美联储加息概率至九成，属于利空数据，但市场出现利空出尽式反转，美股和黄金并没有持续重挫。",
+    source: "",
+    url: "news-20260911-cpi-us-stocks-gold.html",
+    hot: false
+  },
+  {
     date: "2026-09-08",
     tag: "外汇",
     title: "日元贬值下的美日联合干预新逻辑",
